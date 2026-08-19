@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OneZ Promo Admin</title>
+  <link rel="stylesheet" href="/admin/admin.css" />
+</head>
+<body>
+  <main class="admin-shell">
+    <header class="admin-header"><div><p>ONEZ CREATION STUDIO</p><h1>Promo control room</h1><span>Create and manage offers without touching code.</span></div><a href="http://localhost:5173/">Back to studio</a></header>
+    <section class="admin-card auth-card"><label>Admin key<input id="admin-key" type="password" placeholder="Enter local admin key" /></label><button id="load-button">Unlock panel</button><small id="auth-message"></small></section>
+    <section id="panel" class="hidden">
+      <div class="stats"><div><span>Active codes</span><strong id="active-count">0</strong></div><div><span>Total redemptions</span><strong id="use-count">0</strong></div><div><span>Storage</span><strong>Local JSON</strong></div></div>
+      <section class="admin-card"><div class="card-heading"><div><p>CREATE OFFER</p><h2>New promo code</h2></div><span>Changes save immediately</span></div><form id="promo-form"><div class="form-grid"><label>Code<input id="code" required placeholder="LAUNCH20" /></label><label>Discount type<select id="type"><option value="percent">Percentage</option><option value="fixed">Fixed USD</option></select></label><label>Value<input id="value" required type="number" min="0.01" step="0.01" placeholder="20" /></label><label>Plans<select id="plans" multiple><option value="Pro" selected>Pro</option><option value="MAX">MAX</option></select></label><label>Expiry (optional)<input id="expiresAt" type="datetime-local" /></label><label>Max uses (0 = unlimited)<input id="maxUses" type="number" min="0" value="0" /></label></div><button class="primary" type="submit">Create promo code</button><small id="form-message"></small></form></section>
+      <section class="admin-card"><div class="card-heading"><div><p>LIVE OFFERS</p><h2>Promo codes</h2></div><button id="refresh-button" class="ghost">Refresh</button></div><div id="promo-list" class="promo-list"></div></section>
+    </section>
+  </main>
+  <script src="/admin/admin.js"></script>
+</body>
+</html>

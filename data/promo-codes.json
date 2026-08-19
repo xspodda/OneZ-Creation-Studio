@@ -1,0 +1,42 @@
+[
+  {
+    "code": "ONEZPRO",
+    "type": "percent",
+    "value": 20,
+    "plans": [
+      "Pro"
+    ],
+    "label": "20% off applied",
+    "active": true,
+    "expiresAt": "",
+    "maxUses": 0,
+    "uses": 0
+  },
+  {
+    "code": "ONEZMAX",
+    "type": "percent",
+    "value": 25,
+    "plans": [
+      "MAX"
+    ],
+    "label": "25% off applied",
+    "active": true,
+    "expiresAt": "",
+    "maxUses": 0,
+    "uses": 0
+  },
+  {
+    "code": "CREATOR5",
+    "type": "fixed",
+    "value": 5,
+    "plans": [
+      "Pro",
+      "MAX"
+    ],
+    "label": "$5 off applied",
+    "active": true,
+    "expiresAt": "",
+    "maxUses": 0,
+    "uses": 0
+  }
+]

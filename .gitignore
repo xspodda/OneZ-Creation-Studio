@@ -8,4 +8,14 @@ cloudflare-install.log
 .wrangler
 .dev.vars*
 !.dev.vars.example
-!.env.example
+# Stray zero-byte placeholder files created by a broken auto-update.
+# They shadow the real npm/npx/vite on Windows and must never be committed.
+/cd
+/node
+/npm
+/npm.cmd
+/npx
+/vite
+/onez-creation-studio@0.1.0
+/start
+/update

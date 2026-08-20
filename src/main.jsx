@@ -25,15 +25,66 @@ const projects = [
   { title: 'The 3-second hook', meta: 'Edited 3 days ago', type: 'Social', color: 'blue', duration: '00:28' },
 ];
 
+const DEMO_ACCOUNT = {
+  name: 'Jamie Davis',
+  email: 'admin@onezstudio.com',
+  password: 'onez1234',
+};
+
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+
+function OneZLogo({ compact = false }) {
+  return (
+    <svg className={compact ? 'brand-logo brand-logo-compact' : 'brand-logo'} viewBox="0 0 560 220" role="img" aria-label="OneZ Creation Studio">
+      <defs>
+        <linearGradient id="onezGradient" x1="0%" x2="100%" y1="0%" y2="100%">
+          <stop offset="0%" stopColor="#ff6d53" />
+          <stop offset="40%" stopColor="#ff5a45" />
+          <stop offset="100%" stopColor="#ff8b4d" />
+        </linearGradient>
+        <linearGradient id="onezShadow" x1="0%" x2="100%" y1="0%" y2="100%">
+          <stop offset="0%" stopColor="#d9412c" />
+          <stop offset="100%" stopColor="#e14b32" />
+        </linearGradient>
+      </defs>
+      <g transform="translate(0 10)">
+        <path d="M120 42 L278 42 L200 172 L38 172 L108 92 L40 92 L118 12 L280 12 L208 142 L370 142 L300 42 L120 42 Z" fill="url(#onezGradient)" stroke="url(#onezShadow)" strokeWidth="8" strokeLinejoin="round"/>
+        <path d="M96 42 L268 42 L190 172 L28 172 L99 92 L30 92 L108 12 L270 12 L198 142 L350 142 L282 42 L96 42 Z" fill="url(#onezGradient)" opacity="0.2"/>
+      </g>
+      <g transform="translate(290 12)">
+        <text x="0" y="108" fill="#f3f3f1" fontSize="109" fontFamily="'Space Grotesk', 'Segoe UI', sans-serif" fontWeight="700" letterSpacing="-4">OneZ</text>
+        <text x="2" y="170" fill="#b9bec7" fontSize="40" fontFamily="'DM Sans', 'Segoe UI', sans-serif" fontWeight="500" letterSpacing="1.3">Creation Studio</text>
+      </g>
+    </svg>
+  );
+}
+
 function App() {
   const [activeMode, setActiveMode] = useState('Dashboard');
   const [prompt, setPrompt] = useState('');
   const [mobileNav, setMobileNav] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [user, setUser] = useState(() => {
+    try {
+      const savedUser = localStorage.getItem('onez-user');
+      return savedUser ? JSON.parse(savedUser) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem('onez-user', JSON.stringify(user));
+    } else {
+      localStorage.removeItem('onez-user');
+    }
+  }, [user]);
 
   return (
     <div className="app-shell">
       <aside className={`sidebar ${mobileNav ? 'is-open' : ''}`}>
-        <div className="brand"><span className="brand-mark">O</span><span>ONEZ</span><small>CREATION STUDIO</small></div>
+        <div className="brand"><OneZLogo /></div>
         <button className="new-project" onClick={() => setActiveMode('Video Editor')}><Plus size={17} /> New project <span>⌘ N</span></button>
         <nav className="main-nav">
           <p className="nav-label">Workspace</p>
@@ -45,10 +96,10 @@ function App() {
           <button className="nav-item"><AudioLines size={18} /><span>Audio</span></button>
           <p className="nav-label library-label">Manage</p>
           <button className="nav-item"><Activity size={18} /><span>Analytics</span><LockKeyhole size={13} className="locked" /></button>
-          <a className="nav-item admin-link" href="http://localhost:4000/admin/" target="_blank" rel="noreferrer"><Settings2 size={18} /><span>Promo Admin</span></a>
+          {isLocalApp && <a className="nav-item admin-link" href="http://localhost:4000/admin/" target="_blank" rel="noreferrer"><Settings2 size={18} /><span>Promo Admin</span></a>}
           <button className="nav-item"><Cloud size={18} /><span>Cloud projects</span></button>
         </nav>
-        <div className="sidebar-bottom"><button className="nav-item"><LifeBuoy size={18} /><span>Help center</span></button><button className="nav-item"><Settings2 size={18} /><span>Settings</span></button><div className="profile"><div className="avatar">JD</div><div><strong>Jamie Davis</strong><span>Free plan</span></div><MoreHorizontal size={18} /></div></div>
+        <div className="sidebar-bottom"><button className="nav-item"><LifeBuoy size={18} /><span>Help center</span></button><button className="nav-item"><Settings2 size={18} /><span>Settings</span></button><button className="profile profile-button" onClick={() => setAuthOpen(true)}><div className="avatar">{(user?.picture ? <img src={user.picture} alt={user.name} className="user-avatar" /> : (user?.name || 'JD').slice(0, 2).toUpperCase())}</div><div><strong>{user?.name || 'Jamie Davis'}</strong><span>{user ? user.email : 'Free plan · Account'}</span></div><MoreHorizontal size={18} /></button></div>
       </aside>
 
       <main className="main-content">
@@ -56,8 +107,90 @@ function App() {
 
         {activeMode === 'Dashboard' ? <Dashboard prompt={prompt} setPrompt={setPrompt} setActiveMode={setActiveMode} /> : activeMode === 'Billing' ? <Billing /> : <EditorWorkspace mode={activeMode} />}
       </main>
+      {authOpen && <AuthDialog close={() => setAuthOpen(false)} onLogin={setUser} user={user} />}
     </div>
   );
+}
+
+function AuthDialog({ close, onLogin, user }) {
+  const [email, setEmail] = useState(user?.email || DEMO_ACCOUNT.email);
+  const [password, setPassword] = useState('');
+  const [message, setMessage] = useState(GOOGLE_CLIENT_ID ? 'Google login is ready to use once configured for your app.' : 'Demo login: admin@onezstudio.com / onez1234');
+
+  function parseGoogleJwt(credential) {
+    try {
+      const segments = credential.split('.');
+      if (segments.length < 2) return null;
+      const payload = segments[1].replace(/-/g, '+').replace(/_/g, '/');
+      const base64 = atob(payload);
+      return JSON.parse(base64);
+    } catch {
+      return null;
+    }
+  }
+
+  function handleGoogleCredentialResponse(response) {
+    const payload = parseGoogleJwt(response.credential);
+    if (!payload) {
+      setMessage('Google sign-in failed. Please try again.');
+      return;
+    }
+
+    const nextUser = {
+      name: payload.name || payload.given_name || payload.email?.split('@')[0] || 'Google User',
+      email: payload.email || '',
+      picture: payload.picture || '',
+    };
+
+    onLogin(nextUser);
+    setMessage('Google login successful.');
+    window.setTimeout(close, 350);
+  }
+
+  useEffect(() => {
+    if (!GOOGLE_CLIENT_ID || !window.google?.accounts?.id) return;
+
+    window.google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: handleGoogleCredentialResponse,
+    });
+  }, []);
+
+  function handleGoogleLogin() {
+    if (!GOOGLE_CLIENT_ID) {
+      setMessage('Google sign-in is not configured yet. Add VITE_GOOGLE_CLIENT_ID to your .env file and restart the app.');
+      return;
+    }
+
+    if (!window.google?.accounts?.id) {
+      setMessage('Google sign-in script is still loading. Please try again in a moment.');
+      return;
+    }
+
+    window.google.accounts.id.prompt((notification) => {
+      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+        setMessage('Google sign-in is unavailable right now. Please use the demo login or configure the OAuth client.');
+      }
+    });
+  }
+
+  function providerLogin(provider) {
+    setMessage(`${provider} sign-in needs OAuth keys in the backend environment. Use the demo credentials below instead.`);
+  }
+
+  function handleSubmit(event) {
+    event.preventDefault();
+    if (email.trim().toLowerCase() === DEMO_ACCOUNT.email && password === DEMO_ACCOUNT.password) {
+      onLogin({ name: DEMO_ACCOUNT.name, email: DEMO_ACCOUNT.email });
+      setMessage('Login successful.');
+      setTimeout(close, 350);
+      return;
+    }
+
+    setMessage('Invalid email or password. Use the demo account shown below.');
+  }
+
+  return <div className="auth-backdrop" role="presentation" onClick={close}><section className="auth-dialog" role="dialog" aria-modal="true" aria-labelledby="auth-title" onClick={event => event.stopPropagation()}><button className="auth-close" onClick={close} aria-label="Close sign in">×</button><div className="auth-logo"><OneZLogo /></div><p className="eyebrow">ONEZ CREATION STUDIO</p><h2 id="auth-title">Welcome back</h2><p className="auth-subtitle">Sign in to keep your projects, credits, and cloud workspace together.</p><button className="oauth-button google" onClick={handleGoogleLogin}><b>G</b> Continue with Google</button><button className="oauth-button facebook" onClick={() => providerLogin('Facebook')}><b>f</b> Continue with Facebook</button><button className="oauth-button tiktok" onClick={() => providerLogin('TikTok')}><b>♪</b> Continue with TikTok</button><div className="auth-divider"><span>or continue with email</span></div><form onSubmit={handleSubmit}><input className="auth-input" type="email" value={email} onChange={event => setEmail(event.target.value)} placeholder="you@example.com" /><input className="auth-input" type="password" value={password} onChange={event => setPassword(event.target.value)} placeholder="Password" /><button className="email-login" type="submit">Continue with email <ArrowUpRight size={15} /></button></form>{message && <p className="auth-message">{message}</p>}<small className="auth-terms">Demo login: <strong>{DEMO_ACCOUNT.email}</strong> / <strong>{DEMO_ACCOUNT.password}</strong></small><small className="auth-terms">By continuing, you agree to OneZ Terms and Privacy Policy.</small></section></div>;
 }
 
 function Dashboard({ prompt, setPrompt, setActiveMode }) {
@@ -86,6 +219,7 @@ const plans = {
 
 const promoCodes = { ONEZPRO: { type: 'percent', value: 20, label: '20% off applied', plans: ['Pro'] }, ONEZMAX: { type: 'percent', value: 25, label: '25% off applied', plans: ['MAX'] }, CREATOR5: { type: 'fixed', value: 5, label: '$5 off applied', plans: ['Pro', 'MAX'] } };
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+const isLocalApp = ['localhost', '127.0.0.1'].includes(window.location.hostname);
 
 function Billing() {
   const [selectedPlan, setSelectedPlan] = useState('Pro');

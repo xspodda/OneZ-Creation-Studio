@@ -8,7 +8,7 @@ import { scryptSync, timingSafeEqual } from 'node:crypto';
 
 const app = express();
 const port = Number(process.env.PORT || 4000);
-const clientOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
+const clientOrigins = (process.env.CLIENT_ORIGIN || 'http://localhost:5173').split(',').map(origin => origin.trim()).filter(Boolean);
 
 const plans = {
   Pro: { price: 1, currency: 'usd', gpu: false },
@@ -21,7 +21,10 @@ const promoCodes = Object.fromEntries((existsSync(promoFile) ? JSON.parse(readFi
 const accessAttempts = new Map();
 const aiJobs = new Map();
 
-app.use(cors({ origin: clientOrigin }));
+app.use(cors({ origin: (origin, callback) => {
+  if (!origin || clientOrigins.includes(origin)) return callback(null, true);
+  callback(new Error('Origin is not allowed by OneZ CORS policy.'));
+} }));
 app.use(express.json({ limit: '32kb' }));
 app.use('/admin', express.static(join(rootDir, '..', 'admin')));
 
